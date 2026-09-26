@@ -92,6 +92,11 @@ async function loadMeta() {
   const models = meta.models?.length ? meta.models : [meta.model, meta.baseline_model].filter(Boolean);
   sel.innerHTML = models
     .map((m) => `<option value="${esc(m)}">${esc(m)}${m === meta.baseline_model ? " (baseline)" : ""}</option>`).join("");
+  if (meta.static) {
+    // Published snapshot: every run is browsable and replayable, but forging happens on the demo machine.
+    $("#run-btn").disabled = true;
+    $("#form-msg").textContent = "This is the published snapshot — live forging runs on the demo machine.";
+  }
 }
 
 setInterval(() => ($("#clock").textContent = new Date().toLocaleTimeString()), 1000);
@@ -208,6 +213,14 @@ function watch(id) {
     $("#live-sub").textContent = `${req.model || ""} · verifier ${req.verifier_model || ""} · ${id}`;
     setStatus(d.status === "done" ? d.summary?.outcome : d.status);
   }).catch(() => {});
+  if (meta.static) {
+    // Snapshot: replay the recorded transcript instead of streaming a live one.
+    api(`/api/runs/${encodeURIComponent(id)}/events`).then((events) => {
+      (events || []).forEach((ev) => onEvent(id, ev));
+      refreshDetail(id);
+    }).catch(() => {});
+    return;
+  }
   const es = new EventSource(`/api/runs/${encodeURIComponent(id)}/events`);
   current.source = es;
   es.onmessage = (m) => { try { onEvent(id, JSON.parse(m.data)); } catch { /* partial line */ } };
