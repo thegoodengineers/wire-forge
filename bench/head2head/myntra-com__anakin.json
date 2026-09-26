@@ -1,0 +1,23 @@
+{
+ "system": "anakin-build-request",
+ "site": "myntra.com",
+ "goal": "search products by keyword with brand and price filters, paginated",
+ "events": [
+  {
+   "status": "submitted",
+   "ts": "2026-09-26T09:46:42+00:00"
+  },
+  {
+   "status": "shipped",
+   "ts": "2026-09-26T09:53:07+00:00"
+  }
+ ],
+ "action_type": "native-endpoint",
+ "action_id": "act_myntra_com_product_search",
+ "inputs": "search_query, brand, price_min, price_max, discount_min, page, rows, pincode",
+ "works": true,
+ "cost_per_call": "25 credits to build, 1 credit per call",
+ "verification": "builder's internal auto-test (not visible); our run via POST /v1/wire/task completed in 6.3 s and returned 177 Nike sneakers",
+ "failure": "none",
+ "source": "GET /v1/wire/build-requests/48a4b4d5-d7f1-42c9-b6c5-fbd54bed8d59"
+}
