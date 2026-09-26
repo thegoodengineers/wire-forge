@@ -101,16 +101,25 @@ def tally() -> dict:
     minutes = [float(r["wall_s"]) / 60 for r in verified if r.get("wall_s")]
     by_model: dict[str, dict] = {}
     for r in rows:
-        m = by_model.setdefault(r["model"], {"runs": 0, "verified": 0, "wall_s": [], "repairs": []})
+        m = by_model.setdefault(r["model"], {"runs": 0, "verified": 0, "wall_s": [], "repairs": [],
+                                             "out_tokens": [], "turns": []})
         m["runs"] += 1
         if r["outcome"] == "verified":
             m["verified"] += 1
             m["wall_s"].append(float(r["wall_s"]))
         m["repairs"].append(int(r["repair_rounds"] or 0))
+        # Efficiency counts every run, failed ones included: a model that burns 60 turns and
+        # ships nothing must show that cost, not hide it behind its absent successes.
+        if r.get("output_tokens"):
+            m["out_tokens"].append(int(r["output_tokens"]))
+        if r.get("forge_turns"):
+            m["turns"].append(int(r["forge_turns"]))
     models = {
         k: {"runs": v["runs"], "verified": v["verified"],
             "median_min": round(statistics.median(v["wall_s"]) / 60, 1) if v["wall_s"] else None,
-            "avg_repairs": round(statistics.mean(v["repairs"]), 2) if v["repairs"] else None}
+            "avg_repairs": round(statistics.mean(v["repairs"]), 2) if v["repairs"] else None,
+            "median_out_tokens": int(statistics.median(v["out_tokens"])) if v["out_tokens"] else None,
+            "avg_turns": round(statistics.mean(v["turns"]), 1) if v["turns"] else None}
         for k, v in by_model.items()
     }
     return {

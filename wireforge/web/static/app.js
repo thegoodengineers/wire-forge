@@ -44,8 +44,8 @@ async function loadTally() {
   const rows = Object.entries(t.models);
   renderModelChart(rows);
   $("#home-models tbody").innerHTML = rows.length
-    ? rows.map(([m, v]) => `<tr><td class="mono">${esc(m)}</td><td>${v.runs}</td><td>${v.verified}</td><td>${v.median_min ?? "—"}</td><td>${v.avg_repairs ?? "—"}</td></tr>`).join("")
-    : `<tr><td colspan="5" class="empty">No comparison runs yet.</td></tr>`;
+    ? rows.map(([m, v]) => `<tr><td class="mono">${esc(m)}</td><td>${v.runs}</td><td>${v.verified}</td><td>${v.median_min ?? "—"}</td><td>${v.avg_repairs ?? "—"}</td><td>${v.avg_turns ?? "—"}</td><td>${v.median_out_tokens != null ? v.median_out_tokens.toLocaleString() : "—"}</td></tr>`).join("")
+    : `<tr><td colspan="7" class="empty">No comparison runs yet.</td></tr>`;
 }
 
 function renderModelChart(rows) {
@@ -61,7 +61,7 @@ function renderModelChart(rows) {
     <div class="bar-row">
       <span class="bar-label mono">${esc(m)}</span>
       <div class="bar-track"><div class="bar-fill ${slow ? "part" : ""}" style="width:${Math.max(4, ((v.median_min || 0) / max) * 100)}%"></div></div>
-      <span class="bar-value">${v.median_min != null ? `median ${esc(v.median_min)} min` : "—"} · ${v.verified}/${v.runs} verified${v.avg_repairs ? ` · ${esc(v.avg_repairs)} avg repairs` : ""}</span>
+      <span class="bar-value">${v.median_min != null ? `median ${esc(v.median_min)} min` : "no verified run"} · ${v.verified}/${v.runs} verified${v.median_out_tokens != null ? ` · ~${Math.round(v.median_out_tokens / 1000)}K tokens` : ""}</span>
     </div>`;
   }).join("");
 }
