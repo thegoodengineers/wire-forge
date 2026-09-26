@@ -96,7 +96,7 @@ class Agent:
                 tools=[t.definition() for t in self.tools],
                 messages=self.messages,
                 thinking={"type": "adaptive", "display": "summarized"},
-                output_config={"effort": config.EFFORT},
+                output_config={"effort": config.effort_for(self.model)},
                 cache_control={"type": "ephemeral"},
             ) as stream:
                 resp = stream.get_final_message()

@@ -18,6 +18,14 @@ FORGE_MODEL = os.getenv("WIREFORGE_MODEL", "claude-opus-5-5")
 BASELINE_MODEL = os.getenv("WIREFORGE_BASELINE_MODEL", "claude-opus-5")
 EFFORT = os.getenv("WIREFORGE_EFFORT", "high")
 
+
+def effort_for(model: str) -> str:
+    """Opus 5.5 always runs at high effort - it is the model under test and the quality bar.
+    Other models (cheaper tiers, experiments) follow WIREFORGE_EFFORT."""
+    if "opus-5-5" in model:
+        return "high"
+    return EFFORT
+
 # Needed only when the API key is not scoped to a workspace (the API then asks for this header).
 ANTHROPIC_WORKSPACE_ID = os.getenv("ANTHROPIC_WORKSPACE_ID", "")
 
