@@ -162,3 +162,16 @@ def test_results_report_pairs_models_and_flags_incomplete(tmp_path):
     assert "no_working_action" in a and "verified" in a and "Incomplete" not in a
     assert "Incomplete" in b
     assert "No runs recorded yet" in render(load(tmp_path / "missing.csv"))
+
+
+def test_anthropic_client_kwargs_workspace_header_and_missing_key(monkeypatch):
+    from wireforge import config
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    with pytest.raises(SystemExit, match="ANTHROPIC_API_KEY"):
+        config.anthropic_client_kwargs()
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setattr(config, "ANTHROPIC_WORKSPACE_ID", "")
+    assert config.anthropic_client_kwargs()["default_headers"] == {}
+    monkeypatch.setattr(config, "ANTHROPIC_WORKSPACE_ID", "wrkspc_test")
+    assert config.anthropic_client_kwargs()["default_headers"] == {"anthropic-workspace-id": "wrkspc_test"}

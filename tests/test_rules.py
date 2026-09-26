@@ -58,3 +58,16 @@ def test_binary_request_body_does_not_drop_the_entry():
 
     assert BrowserSession._post_text(Req()) == "<binary body, 10 bytes>"
     assert BrowserSession._post_text(TextReq()) == '{"q": 1}'
+
+
+def test_a_crashed_run_still_writes_a_row(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "RESULTS_CSV", tmp_path / "results.csv")
+    monkeypatch.setattr(config, "OUT_DIR", tmp_path / "out")
+
+    def boom(*a, **k):
+        raise RuntimeError("Target page, context or browser has been closed")
+
+    monkeypatch.setattr(pipeline, "_run", boom)
+    row = pipeline.forge_action("https://a.test", "goal", "m1")
+    assert row["outcome"] == "error" and row["emits"] == 0
+    assert "error" in (tmp_path / "results.csv").read_text(encoding="utf-8")

@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from . import config
+from .agent import RunStats
 from .browser import BrowserSession
 from .forge import Forge
 from .verifier import Verifier
@@ -59,11 +60,32 @@ def forge_action(url: str, goal: str, model: str, verifier_model: str | None = N
     verdict: dict = {"passed": False, "checks": [], "summary": "not verified"}
     repairs = 0
     vstats = None
+    forge: Forge | None = None
+    stats = None
+    backend = "anakin" if config.ANAKIN_API_KEY else "local-chromium"
+    try:
+        outcome, repairs, stats, verdict, vstats, forge, backend = _run(
+            url, goal, model, verifier_model, headless, run_dir)
+    except Exception as exc:  # a dead browser or API outage still leaves a row, not a silent gap
+        outcome = "error"
+        verdict = {"passed": False, "checks": [], "summary": f"run crashed: {type(exc).__name__}: {exc}"[:500]}
+        _stage(run_dir, "error", error=verdict["summary"])
+        forge = _CRASH.get("forge")
+        stats = forge.agent.stats if forge else None
+    _CRASH.clear()
+    return _finish(url, goal, model, verifier_model, run_dir, t0, outcome, repairs, stats, verdict, vstats, forge, backend)
 
+
+_CRASH: dict = {}  # the forge in progress, so a crash can still report how far it got
+
+
+def _run(url, goal, model, verifier_model, headless, run_dir):
+    verdict: dict = {"passed": False, "checks": [], "summary": "not verified"}
+    repairs, vstats = 0, None
     with BrowserSession(headless=headless) as browser:
         backend = browser.backend
         _stage(run_dir, "trace", browser=backend)
-        forge = Forge(url, goal, model, run_dir, browser)
+        forge = _CRASH["forge"] = Forge(url, goal, model, run_dir, browser)
         stats = forge.run()
         while True:
             if not forge.passed:
@@ -86,16 +108,21 @@ def forge_action(url: str, goal: str, model: str, verifier_model: str | None = N
             print(f"\n=== verifier rejected; repair round {repairs} ===\n", flush=True)
             _stage(run_dir, "repair", round=repairs)
             stats = forge.repair(json.dumps(verdict, indent=1))
+    return outcome, repairs, stats, verdict, vstats, forge, backend
 
+
+def _finish(url, goal, model, verifier_model, run_dir, t0, outcome, repairs, stats, verdict, vstats, forge, backend):
+    spec = (forge.spec if forge else None) or {}
+    s = stats or RunStats(model=model)
     summary = {
         "site": url, "goal": goal, "model": model, "outcome": outcome,
-        "action_id": (forge.spec or {}).get("action_id", ""),
-        "type": recorded_type((forge.spec or {}).get("type", ""), verdict),
-        "declared_type": (forge.spec or {}).get("type", ""),
-        "emits": forge.emits, "repair_rounds": repairs,
-        "forge_turns": stats.turns, "forge_tool_calls": stats.tool_calls, "forge_tool_errors": stats.tool_errors,
-        "input_tokens": stats.input_tokens, "output_tokens": stats.output_tokens,
-        "cache_read_tokens": stats.cache_read_tokens, "cache_write_tokens": stats.cache_write_tokens,
+        "action_id": spec.get("action_id", ""),
+        "type": recorded_type(spec.get("type", ""), verdict),
+        "declared_type": spec.get("type", ""),
+        "emits": forge.emits if forge else 0, "repair_rounds": repairs,
+        "forge_turns": s.turns, "forge_tool_calls": s.tool_calls, "forge_tool_errors": s.tool_errors,
+        "input_tokens": s.input_tokens, "output_tokens": s.output_tokens,
+        "cache_read_tokens": s.cache_read_tokens, "cache_write_tokens": s.cache_write_tokens,
         "verifier_input_tokens": vstats.input_tokens if vstats else 0,
         "verifier_output_tokens": vstats.output_tokens if vstats else 0,
         "verifier_cache_read_tokens": vstats.cache_read_tokens if vstats else 0,
