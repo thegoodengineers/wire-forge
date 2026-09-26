@@ -97,6 +97,9 @@ async function loadMeta() {
     $("#run-btn").disabled = true;
     $("#form-msg").textContent = "This is the published snapshot — live forging runs on the demo machine.";
   }
+  // No passcode configured (booth mode): hide the field so visitors just hit Start.
+  const passLabel = $("#run-form").passcode.closest("label");
+  if (passLabel) passLabel.hidden = meta.passcode_required === false && !meta.static ? true : passLabel.hidden;
 }
 
 setInterval(() => ($("#clock").textContent = new Date().toLocaleTimeString()), 1000);
