@@ -89,8 +89,9 @@ async function loadMeta() {
   $$('[data-meta="version"]').forEach((el) => (el.textContent = `v${meta.version || "?"}`));
   $$('[data-meta="browser"]').forEach((el) => (el.textContent = meta.browser || "—"));
   const sel = $("#model-select");
-  sel.innerHTML = [meta.model, meta.baseline_model].filter(Boolean)
-    .map((m, i) => `<option value="${esc(m)}">${esc(m)}${i ? " (baseline)" : ""}</option>`).join("");
+  const models = meta.models?.length ? meta.models : [meta.model, meta.baseline_model].filter(Boolean);
+  sel.innerHTML = models
+    .map((m) => `<option value="${esc(m)}">${esc(m)}${m === meta.baseline_model ? " (baseline)" : ""}</option>`).join("");
 }
 
 setInterval(() => ($("#clock").textContent = new Date().toLocaleTimeString()), 1000);

@@ -16,6 +16,8 @@ RESULTS_CSV = Path(os.getenv("WIREFORGE_RESULTS_CSV", ROOT / "bench" / "results.
 # The model under test, and the previous Opus used as the baseline.
 FORGE_MODEL = os.getenv("WIREFORGE_MODEL", "claude-opus-5-5")
 BASELINE_MODEL = os.getenv("WIREFORGE_BASELINE_MODEL", "claude-opus-5")
+# Further models offered on the Forge Board (comma-separated), for cost/capability comparisons.
+EXTRA_MODELS = [m.strip() for m in os.getenv("WIREFORGE_EXTRA_MODELS", "claude-sonnet-5").split(",") if m.strip()]
 EFFORT = os.getenv("WIREFORGE_EFFORT", "high")
 
 

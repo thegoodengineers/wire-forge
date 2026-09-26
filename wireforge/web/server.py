@@ -26,7 +26,7 @@ from ..pipeline import forge_action, new_run_dir
 
 STATIC = Path(__file__).parent / "static"
 PASSCODE = os.getenv("WIREFORGE_PASSCODE", "")
-ALLOWED_MODELS = {config.FORGE_MODEL, config.BASELINE_MODEL}
+ALLOWED_MODELS = {config.FORGE_MODEL, config.BASELINE_MODEL, *config.EXTRA_MODELS}
 
 app = FastAPI(title="Wire Forge", version=__version__, docs_url="/api/docs")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
@@ -86,6 +86,7 @@ def favicon() -> FileResponse:
 def meta() -> dict:
     return {
         "version": __version__, "model": config.FORGE_MODEL, "baseline_model": config.BASELINE_MODEL,
+        "models": [config.FORGE_MODEL, config.BASELINE_MODEL, *config.EXTRA_MODELS],
         "browser": "anakin" if config.ANAKIN_API_KEY else "local-chromium",
         "passcode_required": bool(PASSCODE), "busy": bool(_active and "running" in _active.values()),
         "api_key_present": bool(os.getenv("ANTHROPIC_API_KEY")),
