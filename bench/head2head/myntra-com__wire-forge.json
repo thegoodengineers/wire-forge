@@ -1,0 +1,24 @@
+{
+ "system": "wire-forge",
+ "site": "myntra.com",
+ "goal": "search products by keyword with brand and price filters, paginated",
+ "events": [
+  {
+   "status": "submitted",
+   "ts": "2026-09-26T09:20:35+00:00"
+  },
+  {
+   "status": "shipped",
+   "ts": "2026-09-26T09:24:14+00:00"
+  }
+ ],
+ "action_type": "native-endpoint",
+ "action_id": "myntra_search_products",
+ "model": "claude-opus-5-5",
+ "inputs": "query, brands, min_price, max_price, sort, page, rows",
+ "works": true,
+ "cost_per_call": "no Anakin credits",
+ "verification": "independent verifier: 6/6 values matched Myntra's own backend (the verifier's browser could not load the pages)",
+ "failure": "none",
+ "source": "out/www-myntra-com__claude-opus-5-5__20260926-145035"
+}
