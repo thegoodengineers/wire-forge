@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-from . import config
+from . import cancel, config
 from .agent import RunStats
 from .browser import BrowserSession
 from .forge import Forge
@@ -88,6 +88,10 @@ def _run(url, goal, model, verifier_model, headless, run_dir):
         forge = _CRASH["forge"] = Forge(url, goal, model, run_dir, browser)
         stats = forge.run()
         while True:
+            if cancel.requested():
+                outcome = "cancelled"
+                _stage(run_dir, "done", outcome="cancelled")
+                break
             if not forge.passed:
                 outcome = "no_working_action"
                 break

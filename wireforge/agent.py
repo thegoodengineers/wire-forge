@@ -10,7 +10,7 @@ from typing import Any, Callable
 
 import anthropic
 
-from . import config
+from . import cancel, config
 
 
 @dataclass
@@ -88,6 +88,11 @@ class Agent:
             self.messages.append({"role": "user", "content": task})
         self._log("task", task)
         while self.stats.turns < max_turns and not self.finished:
+            if cancel.requested():
+                self.stats.stop = "cancelled"
+                self._log("stats", {"turns": self.stats.turns, "tool_calls": self.stats.tool_calls,
+                                    "output_tokens": self.stats.output_tokens, "wall_s": 0, "stop": "cancelled"})
+                return self.stats
             self.stats.turns += 1
             with self.client.messages.stream(
                 model=self.model,

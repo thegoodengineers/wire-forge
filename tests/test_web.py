@@ -56,3 +56,9 @@ def test_run_ids_cannot_escape_out_dir(client):
     c, _ = client
     assert c.get("/api/runs/..%2F..%2Fetc").status_code == 404
     assert c.get("/api/runs/nope").status_code == 404
+
+
+def test_cancel_run_is_guarded(client):
+    c, _ = client
+    assert c.post("/api/runs/nope/cancel", json={"passcode": "bad"}).status_code == 403
+    assert c.post("/api/runs/nope/cancel", json={"passcode": "letmein"}).status_code == 409

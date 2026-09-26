@@ -12,7 +12,7 @@ const api = async (path, opts) => {
   return body;
 };
 const host = (u) => { try { return new URL(u).host.replace(/^www\./, ""); } catch { return u || ""; } };
-const OUTCOME = { verified: "verified", rejected_by_verifier: "rejected", no_working_action: "no action", error: "error", running: "running", interrupted: "interrupted", done: "done" };
+const OUTCOME = { verified: "verified", rejected_by_verifier: "rejected", no_working_action: "no action", error: "error", running: "running", interrupted: "interrupted", done: "done", cancelled: "cancelled", cancelling: "cancelling" };
 
 let meta = {};
 let current = null; // { id, source }
@@ -218,7 +218,21 @@ function setStatus(st) {
   const el = $("#live-status");
   el.className = `status ${st || ""}`;
   el.textContent = OUTCOME[st] || st || "";
+  $("#cancel-btn").hidden = !(st === "running" || st === "cancelling");
 }
+
+$("#cancel-btn").addEventListener("click", async () => {
+  if (!current?.id) return;
+  const passcode = $("#run-form").passcode.value || prompt("Passcode to cancel this run:") || "";
+  try {
+    await api(`/api/runs/${encodeURIComponent(current.id)}/cancel`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ passcode }),
+    });
+    setStatus("cancelling");
+  } catch (err) {
+    alert(err.message);
+  }
+});
 
 function onEvent(id, ev) {
   if (current?.id !== id) return;

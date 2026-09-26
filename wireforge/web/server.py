@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from .. import __version__, config
+from .. import __version__, cancel, config
 from ..pipeline import forge_action, new_run_dir
 
 STATIC = Path(__file__).parent / "static"
@@ -218,6 +218,7 @@ def start_run(body: RunRequest) -> dict:
         raise HTTPException(503, "ANTHROPIC_API_KEY is not set on the server")
     if not _lock.acquire(blocking=False):
         raise HTTPException(409, "a run is already in progress; watch it on the board")
+    cancel.clear()
     run_dir = new_run_dir(body.url, body.model)
     run_id = run_dir.name
     _active[run_id] = "running"
@@ -237,3 +238,20 @@ def start_run(body: RunRequest) -> dict:
 
     threading.Thread(target=work, name=f"run-{run_id}", daemon=True).start()
     return {"id": run_id}
+
+
+class CancelRequest(BaseModel):
+    passcode: str = ""
+
+
+@app.post("/api/runs/{run_id}/cancel")
+def cancel_run(run_id: str, body: CancelRequest) -> dict:
+    """Ask the live run to stop. Cooperative: agents stop between turns, and the run is
+    recorded as cancelled - a row in the CSV, never a silent disappearance."""
+    if PASSCODE and not hmac.compare_digest(body.passcode, PASSCODE):
+        raise HTTPException(403, "wrong passcode")
+    if _active.get(run_id) != "running":
+        raise HTTPException(409, "that run is not running")
+    cancel.request()
+    _active[run_id] = "cancelling"
+    return {"id": run_id, "status": "cancelling"}
